@@ -266,7 +266,6 @@
         <div class="alert alert-info">{{ session('info') }}</div>
     @endif
 
-    {{-- $cart is the Order model passed from OrderController@cart --}}
     @if(isset($cart) && $cart->orderItems->count() > 0)
 
         <div class="cart-list">
@@ -274,7 +273,7 @@
             <div class="cart-item">
                 @if($item->menuItem->image)
                     <img class="cart-item-img"
-                         src="{{ asset('storage/' . $item->menuItem->image) }}"
+                         src="{{ str_starts_with($item->menuItem->image ?? '', 'http') ? $item->menuItem->image : asset('storage/' . $item->menuItem->image) }}"
                          alt="{{ $item->menuItem->name }}">
                 @else
                     <img class="cart-item-img"
@@ -288,7 +287,6 @@
                 </div>
 
                 <div class="cart-item-right">
-                    {{-- Decrease qty --}}
                     <div class="qty-stepper">
                         <form action="{{ route('order-items.update', [$cart->id, $item->id]) }}" method="POST">
                             @csrf @method('PATCH')
@@ -298,7 +296,6 @@
 
                         <span class="qty-num">{{ $item->quantity }}</span>
 
-                        {{-- Increase qty --}}
                         <form action="{{ route('order-items.update', [$cart->id, $item->id]) }}" method="POST">
                             @csrf @method('PATCH')
                             <input type="hidden" name="quantity" value="{{ $item->quantity + 1 }}">
@@ -308,7 +305,6 @@
 
                     <span class="cart-item-subtotal">₱{{ number_format($item->subtotal, 2) }}</span>
 
-                    {{-- Remove item --}}
                     <form action="{{ route('order-items.destroy', [$cart->id, $item->id]) }}" method="POST">
                         @csrf @method('DELETE')
                         <button type="submit" class="remove-btn" title="Remove">✕</button>
@@ -330,45 +326,42 @@
 
             <div class="summary-divider"></div>
 
-<div class="summary-row">
-    <span>Subtotal</span>
-    <span>₱{{ number_format($subtotal, 2) }}</span>
-</div>
-<div class="summary-row" style="color:#90d890;">
-    <span style="display:flex;align-items:center;gap:.4rem;">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-        Member discount (15%)
-    </span>
-    <span>− ₱{{ number_format($discount, 2) }}</span>
-</div>
+            <div class="summary-row">
+                <span>Subtotal</span>
+                <span>₱{{ number_format($subtotal, 2) }}</span>
+            </div>
+            <div class="summary-row" style="color:#90d890;">
+                <span style="display:flex;align-items:center;gap:.4rem;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                    Member discount (15%)
+                </span>
+                <span>− ₱{{ number_format($discount, 2) }}</span>
+            </div>
 
-<div class="summary-divider"></div>
+            <div class="summary-divider"></div>
 
-<div class="summary-total">
-    <span class="total-label">Total</span>
-    <span class="total-amount">₱{{ number_format($total, 2) }}</span>
-</div>
+            <div class="summary-total">
+                <span class="total-label">Total</span>
+                <span class="total-amount">₱{{ number_format($total, 2) }}</span>
+            </div>
 
-            {{-- Confirm order form with payment method --}}
             <form action="{{ route('orders.confirm', $cart->id) }}" method="POST">
                 @csrf
-                <select name="payment_method" style="
-                    width: 100%;
-                    background: rgba(242,234,216,0.06);
-                    border: 1px solid rgba(242,234,216,0.15);
-                    border-radius: 999px;
-                    color: var(--oat);
-                    padding: 0.75rem 1.5rem;
-                    font-family: 'DM Sans', sans-serif;
-                    font-size: 0.88rem;
-                    margin-bottom: 0.75rem;
-                    appearance: none;
-                    cursor: pointer;
-                ">
-                    <option value="cash">Cash</option>
-                    <option value="gcash">GCash</option>
-                    <option value="card">Card</option>
-                </select>
+                <input type="hidden" name="payment_method" id="payment_method" value="cash">
+                <div style="display:flex;gap:0.6rem;margin-bottom:0.75rem;">
+                    <button type="button" onclick="selectPayment('cash')" id="pay-cash"
+                        style="flex:1;padding:0.75rem;border-radius:12px;border:1px solid rgba(181,118,42,0.5);background:rgba(181,118,42,0.15);color:var(--oat);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;transition:all 0.2s;">
+                        Cash
+                    </button>
+                    <button type="button" onclick="selectPayment('gcash')" id="pay-gcash"
+                        style="flex:1;padding:0.75rem;border-radius:12px;border:1px solid rgba(242,234,216,0.12);background:rgba(242,234,216,0.04);color:rgba(242,234,216,0.5);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;transition:all 0.2s;">
+                        GCash
+                    </button>
+                    <button type="button" onclick="selectPayment('card')" id="pay-card"
+                        style="flex:1;padding:0.75rem;border-radius:12px;border:1px solid rgba(242,234,216,0.12);background:rgba(242,234,216,0.04);color:rgba(242,234,216,0.5);font-family:'DM Sans',sans-serif;font-size:0.8rem;cursor:pointer;transition:all 0.2s;">
+                        Card
+                    </button>
+                </div>
                 <button type="submit" class="checkout-btn">Place Order &rarr;</button>
             </form>
 
@@ -379,9 +372,29 @@
         <div class="empty-cart">
             <h3>Your cart is empty</h3>
             <p>Browse the menu and add your favourite drinks.</p>
-            <a href="{{ route('orders.create') }}" class="checkout-btn" style="max-width:200px; margin: 0 auto;">Go to Menu</a>
+            <a href="{{ route('orders.create') }}" class="checkout-btn" style="max-width:200px;margin:0 auto;">Go to Menu</a>
         </div>
     @endif
 </div>
 
 @endsection
+
+@push('scripts')
+<script>
+function selectPayment(method) {
+    document.getElementById('payment_method').value = method;
+    ['cash','gcash','card'].forEach(m => {
+        const btn = document.getElementById('pay-' + m);
+        if (m === method) {
+            btn.style.border = '1px solid rgba(181,118,42,0.5)';
+            btn.style.background = 'rgba(181,118,42,0.15)';
+            btn.style.color = 'var(--oat)';
+        } else {
+            btn.style.border = '1px solid rgba(242,234,216,0.12)';
+            btn.style.background = 'rgba(242,234,216,0.04)';
+            btn.style.color = 'rgba(242,234,216,0.5)';
+        }
+    });
+}
+</script>
+@endpush

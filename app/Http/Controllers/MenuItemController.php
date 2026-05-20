@@ -85,11 +85,19 @@ class MenuItemController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            $uploaded = cloudinary()->upload($request->file('image')->getRealPath(), [
-                'folder' => 'brew-and-bean/menu-items',
-            ]);
-            $validated['image'] = $uploaded->getSecurePath();
-        }
+    $cloudinary = new \Cloudinary\Cloudinary([
+        'cloud' => [
+            'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
+            'api_key'    => env('CLOUDINARY_API_KEY'),
+            'api_secret' => env('CLOUDINARY_API_SECRET'),
+        ],
+    ]);
+    $result = $cloudinary->uploadApi()->upload(
+        $request->file('image')->getRealPath(),
+        ['folder' => 'brew-and-bean/menu-items']
+    );
+    $validated['image'] = $result['secure_url'];
+}
 
         $validated['is_available'] = $request->boolean('is_available');
         $menuItem->update($validated);

@@ -241,10 +241,9 @@
                 <label class="form-label">Item Image</label>
                 <div class="img-upload-wrap" onclick="">
                     <input type="file" name="image" accept="image/*" onchange="previewImage(this)">
-                    <div class="img-upload-icon">📷</div>
                     <p class="img-upload-label">Click to upload or drag & drop<br><span style="font-size:0.72rem;opacity:0.6;">JPG, PNG — max 2MB</span></p>
                     <img id="img-preview" class="img-preview"
-                        @isset($menuItem) @if($menuItem->image) src="{{ asset('storage/' . $menuItem->image) }}" style="display:block;" @endif @endisset
+                        @isset($menuItem) @if($menuItem->image) src="{{ str_starts_with($menuItem->image, 'http') ? $menuItem->image : asset('storage/' . $menuItem->image) }}" style="display:block;" @endif @endisset
                         alt="Preview">
                 </div>
                 @error('image') <p class="form-error">{{ $message }}</p> @enderror
@@ -272,16 +271,24 @@
                 </button>
                 <a href="{{ route('staff.dashboard') }}" class="btn-outline">Cancel</a>
                 @isset($menuItem)
-                    <form action="{{ route('staff.menu.destroy', $menuItem->id) }}" method="POST"
-                          style="margin-left:auto;"
-                          onsubmit="return confirm('Delete this item permanently?')">
-                        @csrf @method('DELETE')
-                        <button type="submit" class="btn-danger">Delete</button>
-                    </form>
+                    <button type="button" class="btn-danger" style="margin-left:auto;"
+                        onclick="document.getElementById('delete-form').submit()">
+                        Delete
+                    </button>
                 @endisset
             </div>
 
-        </form>
+        </form> {{-- main form ends here --}}
+
+        {{-- Delete form OUTSIDE the main form --}}
+        @isset($menuItem)
+            <form id="delete-form"
+                  action="{{ route('staff.menu.destroy', $menuItem->id) }}"
+                  method="POST"
+                  onsubmit="return confirm('Delete this item permanently?')">
+                @csrf @method('DELETE')
+            </form>
+        @endisset
     </div>
 </div>
 
