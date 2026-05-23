@@ -95,6 +95,8 @@
         border: 1px solid rgba(242,234,216,0.08);
         border-radius: 18px;
         overflow: hidden;
+        display: flex;
+        flex-direction: column;
     }
 
     .dash-section-header {
@@ -103,6 +105,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
+        flex-shrink: 0;
     }
     .dash-section-title {
         font-family: 'Cormorant Garamond', serif;
@@ -119,6 +122,27 @@
         transition: opacity 0.2s;
     }
     .dash-section-action:hover { opacity: 0.7; }
+
+    /* ── Scrollable body ── */
+    .dash-section-body {
+        max-height: 198px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(181,118,42,0.3) transparent;
+    }
+    .dash-section-body::-webkit-scrollbar {
+        width: 4px;
+    }
+    .dash-section-body::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .dash-section-body::-webkit-scrollbar-thumb {
+        background: rgba(181,118,42,0.3);
+        border-radius: 999px;
+    }
+    .dash-section-body::-webkit-scrollbar-thumb:hover {
+        background: rgba(181,118,42,0.55);
+    }
 
     /* ── Live orders list ── */
     .order-row {
@@ -318,7 +342,7 @@
         </div>
         <div class="stat-card">
             <p class="stat-card-label">Menu Items</p>
-            <p class="stat-card-num">{{ $menuCount ?? 0 }}</p>
+            <p class="stat-card-num">{{ $menuItems->where('is_available', true)->count() }}</p>
             <p class="stat-card-sub">active items</p>
         </div>
     </div>
@@ -333,44 +357,46 @@
                 <a href="{{ route('staff.orders.index') }}" class="dash-section-action">View all &rarr;</a>
             </div>
 
-            @forelse($liveOrders ?? [] as $order)
-                <div class="order-row">
-                    <div class="order-row-left">
-                        <p class="order-id">
-                            Order #{{ $order->id }}
-                            @if($order->is_walkin)
-                                &nbsp;<span class="order-badge badge-pending" style="font-size:.55rem">Walk-in</span>
-                            @endif
-                        </p>
-                        <p class="order-meta">
-                            {{ $order->is_walkin ? ($order->customer_name ?? 'Walk-in customer') : ($order->user?->name ?? '—') }}
-                            &middot; ₱{{ number_format($order->total_amount, 2) }}
-                            &middot; {{ $order->payment?->method ?? '—' }}
-                        </p>
-                        <p class="order-items-preview">
-                            {{ $order->orderItems->map(fn($i) => $i->menuItem->name . ' ×' . $i->quantity)->join(', ') }}
-                        </p>
+            <div class="dash-section-body">
+                @forelse($liveOrders ?? [] as $order)
+                    <div class="order-row">
+                        <div class="order-row-left">
+                            <p class="order-id">
+                                Order #{{ $order->id }}
+                                @if($order->is_walkin)
+                                    &nbsp;<span class="order-badge badge-pending" style="font-size:.55rem">Walk-in</span>
+                                @endif
+                            </p>
+                            <p class="order-meta">
+                                {{ $order->is_walkin ? ($order->customer_name ?? 'Walk-in customer') : ($order->user?->name ?? '—') }}
+                                &middot; ₱{{ number_format($order->total_amount, 2) }}
+                                &middot; {{ $order->payment?->method ?? '—' }}
+                            </p>
+                            <p class="order-items-preview">
+                                {{ $order->orderItems->map(fn($i) => $i->menuItem->name . ' ×' . $i->quantity)->join(', ') }}
+                            </p>
+                        </div>
+
+                        {{-- Status badge --}}
+                        @if($order->status === 'pending')
+                            <span class="order-badge badge-pending">Pending</span>
+                        @else
+                            <span class="order-badge badge-completed">Completed</span>
+                        @endif
+
+                        {{-- Mark complete button — only for pending orders --}}
+                        @if($order->status === 'pending')
+                            <form action="{{ route('staff.orders.updateStatus', $order->id) }}" method="POST" class="complete-form">
+                                @csrf @method('PATCH')
+                                <input type="hidden" name="status" value="completed">
+                                <button type="submit">Mark Ready ✓</button>
+                            </form>
+                        @endif
                     </div>
-
-                    {{-- Status badge --}}
-                    @if($order->status === 'pending')
-                        <span class="order-badge badge-pending">Pending</span>
-                    @else
-                        <span class="order-badge badge-completed">Completed</span>
-                    @endif
-
-                    {{-- Mark complete button — only for pending orders --}}
-                    @if($order->status === 'pending')
-                        <form action="{{ route('staff.orders.updateStatus', $order->id) }}" method="POST" class="complete-form">
-                            @csrf @method('PATCH')
-                            <input type="hidden" name="status" value="completed">
-                            <button type="submit">Mark Ready ✓</button>
-                        </form>
-                    @endif
-                </div>
-            @empty
-                <div class="empty-row">No active orders right now</div>
-            @endforelse
+                @empty
+                    <div class="empty-row">No active orders right now</div>
+                @endforelse
+            </div>
         </div>
 
         {{-- Menu Management --}}
@@ -380,29 +406,30 @@
                 <a href="{{ route('staff.menu.create') }}" class="dash-section-action">+ Add item</a>
             </div>
 
-            @forelse($menuItems ?? [] as $item)
-                <div class="menu-row">
-                    @if($item->image)
-                        <img class="menu-row-img" src="{{ $item->image }}" alt="{{ $item->name }}">
-
-                    @else
-                        <img class="menu-row-img" src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=100&q=60" alt="{{ $item->name }}">
-                    @endif
-                    <div class="menu-row-info">
-                        <p class="menu-row-name">{{ $item->name }}</p>
-                        <p class="menu-row-price">₱{{ number_format($item->price, 2) }}</p>
+            <div class="dash-section-body">
+                @forelse($menuItems ?? [] as $item)
+                    <div class="menu-row">
+                        @if($item->image)
+                            <img class="menu-row-img" src="{{ $item->image }}" alt="{{ $item->name }}">
+                        @else
+                            <img class="menu-row-img" src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=100&q=60" alt="{{ $item->name }}">
+                        @endif
+                        <div class="menu-row-info">
+                            <p class="menu-row-name">{{ $item->name }}</p>
+                            <p class="menu-row-price">₱{{ number_format($item->price, 2) }}</p>
+                        </div>
+                        <div class="menu-row-actions">
+                            <a href="{{ route('staff.menu.edit', $item->id) }}" class="action-btn action-edit">Edit</a>
+                            <form action="{{ route('staff.menu.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Delete {{ $item->name }}?')">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="action-btn action-delete">Delete</button>
+                            </form>
+                        </div>
                     </div>
-                    <div class="menu-row-actions">
-                        <a href="{{ route('staff.menu.edit', $item->id) }}" class="action-btn action-edit">Edit</a>
-                        <form action="{{ route('staff.menu.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Delete {{ $item->name }}?')">
-                            @csrf @method('DELETE')
-                            <button type="submit" class="action-btn action-delete">Delete</button>
-                        </form>
-                    </div>
-                </div>
-            @empty
-                <div class="empty-row">No menu items yet — add your first one!</div>
-            @endforelse
+                @empty
+                    <div class="empty-row">No menu items yet — add your first one!</div>
+                @endforelse
+            </div>
         </div>
 
     </div>

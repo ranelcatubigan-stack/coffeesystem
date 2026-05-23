@@ -162,9 +162,8 @@
                         {{-- Image --}}
                         <div class="card-img-wrap">
                             @if($item->image)
-                                <img src="{{ asset('storage/' . $item->image) }}" alt="{{ $item->name }}">
+                                <img src="{{ str_starts_with($item->image ?? '', 'http') ? $item->image : asset('storage/' . $item->image) }}" alt="{{ $item->name }}">
                             @else
-                                <div class="card-img-placeholder">☕</div>
                             @endif
                             <span class="card-category-badge">{{ $category }}</span>
                         </div>

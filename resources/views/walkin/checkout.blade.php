@@ -169,21 +169,19 @@
                     <div class="pay-option">
                         <input type="radio" name="payment_method" id="pay_cash" value="cash" {{ old('payment_method','cash') === 'cash' ? 'checked' : '' }}>
                         <label for="pay_cash">
-                            <span class="pay-icon">💵</span>
                             Cash
                         </label>
                     </div>
                     <div class="pay-option">
                         <input type="radio" name="payment_method" id="pay_gcash" value="gcash" {{ old('payment_method') === 'gcash' ? 'checked' : '' }}>
                         <label for="pay_gcash">
-                            <span class="pay-icon">📱</span>
                             GCash
                         </label>
                     </div>
                     <div class="pay-option">
                         <input type="radio" name="payment_method" id="pay_card" value="card" {{ old('payment_method') === 'card' ? 'checked' : '' }}>
                         <label for="pay_card">
-                            <span class="pay-icon">💳</span>
+
                             Card
                         </label>
                     </div>
