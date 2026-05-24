@@ -636,6 +636,14 @@
             .discount-banner::before { display: none; }
             .discount-section { padding: 0 1.5rem 3rem; }
         }
+
+        * {
+    animation: none !important;
+    animation-delay: 0s !important;
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+}
     </style>
 </head>
 <body>
